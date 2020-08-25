@@ -12,6 +12,7 @@ class Router @Inject() (
     userCtrl: UserCtrl,
     organisationCtrl: OrganisationCtrl,
     taskCtrl: TaskCtrl,
+    logCtrl: LogCtrl,
     customFieldCtrl: CustomFieldCtrl,
     alertCtrl: AlertCtrl,
     auditCtrl: AuditCtrl,
@@ -31,6 +32,7 @@ class Router @Inject() (
     case POST(p"/auth/totp/unset")       => authenticationCtrl.totpUnsetSecret(None)
     case POST(p"/auth/totp/unset/$user") => authenticationCtrl.totpUnsetSecret(Some(user))
 
+    case GET(p"/case")                  => caseCtrl.list
     case POST(p"/case")                 => caseCtrl.create
     case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
     case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId)
@@ -69,12 +71,20 @@ class Router @Inject() (
 //    case GET(p"/share/$shareId")   ⇒ shareCtrl.get(shareId)
 //    case PATCH(p"/share/$shareId") ⇒ shareCtrl.update(shareId)
 
-    case GET(p"/task")           => taskCtrl.list
-    case POST(p"/task")          => taskCtrl.create
-    case GET(p"/task/$taskId")   => taskCtrl.get(taskId)
-    case PATCH(p"/task/$taskId") => taskCtrl.update(taskId)
+    case GET(p"/task")                        => taskCtrl.list
+    case POST(p"/task")                       => taskCtrl.create
+    case GET(p"/case/$caseId/task")           => taskCtrl.list(caseId)
+    case GET(p"/task/$taskId")                => taskCtrl.get(taskId)
+    case PATCH(p"/task/$taskId")              => taskCtrl.update(taskId)
     // POST     /case/:caseId/task/_search           controllers.TaskCtrl.findInCase(caseId)
     // POST     /case/task/_stats                    controllers.TaskCtrl.stats()
+
+    case GET(p"/task/$taskId/log")          => logCtrl.list(taskId)
+    case GET(p"/log/$logId")                => logCtrl.get(logId)
+    case GET(p"/log")                       => logCtrl.list
+    case POST(p"/task/$taskId/log")         => logCtrl.create(taskId)
+    case PATCH(p"/log/$logId")              => logCtrl.update(logId)
+    case DELETE(p"/log/$logId")             => logCtrl.delete(logId)
 
     case GET(p"/customField")  => customFieldCtrl.list
     case POST(p"/customField") => customFieldCtrl.create

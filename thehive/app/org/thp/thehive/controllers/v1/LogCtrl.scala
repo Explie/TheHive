@@ -10,9 +10,11 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputLog
 import org.thp.thehive.models.{Permissions, RichLog}
 import org.thp.thehive.services.{LogSrv, LogSteps, OrganisationSrv, TaskSrv}
-import play.api.Logger
 import play.api.libs.json.JsObject
+import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
+import scala.util.Success
+
 @Singleton
 class LogCtrl @Inject() (
     entrypoint: Entrypoint,
@@ -80,5 +82,40 @@ class LogCtrl @Inject() (
           log <- logSrv.get(logId).can(Permissions.manageTask).getOrFail()
           _   <- logSrv.cascadeRemove(log)
         } yield Results.NoContent
+      }
+
+  def get(logId: String): Action[AnyContent] =
+    entrypoint("get log")
+      .authRoTransaction(db) { implicit request =>
+        implicit graph =>
+          logSrv
+            .getByIds(logId)
+            .visible
+            .richLog
+            .getOrFail()
+            .map(log => Results.Ok(log.toJson))
+      }
+
+  def list: Action[AnyContent] =
+    entrypoint("list logs")
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        val logs = logSrv
+          .initSteps
+          .visible
+          .richLog
+          .toList
+        Success(Results.Ok(logs.toJson))
+      }
+
+  def list(taskId: String): Action[AnyContent] =
+    entrypoint("list logs for specific task")
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        val logs = taskSrv
+          .getByIds(taskId)
+          .visible
+          .logs
+          .richLog
+          .toList
+        Success(Results.Ok(logs.toJson))
       }
 }

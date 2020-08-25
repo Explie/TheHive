@@ -11,6 +11,7 @@ import org.thp.thehive.dto.v1.InputTask
 import org.thp.thehive.models.{Permissions, RichTask, TaskStatus}
 import org.thp.thehive.services.{CaseSrv, CaseSteps, LogSteps, OrganisationSrv, OrganisationSteps, ShareSrv, TaskSrv, TaskSteps, UserSteps}
 import play.api.libs.json.JsObject
+import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -27,6 +28,7 @@ class TaskCtrl @Inject() (
 ) extends QueryableCtrl
     with TaskRenderer {
 
+  lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "task"
   override val publicProperties: List[PublicProperty[_, _]] = properties.task ::: metaProperties[TaskSteps]
   override val initialQuery: Query =
@@ -73,13 +75,14 @@ class TaskCtrl @Inject() (
 
   def get(taskId: String): Action[AnyContent] =
     entrypoint("get task")
-      .authRoTransaction(db) { implicit request => implicit graph =>
-        taskSrv
-          .getByIds(taskId)
-          .visible
-          .richTask
-          .getOrFail("Task")
-          .map(task => Results.Ok(task.toJson))
+      .authRoTransaction(db) { implicit request =>
+        implicit graph =>
+          taskSrv
+            .getByIds(taskId)
+            .visible
+            .richTask
+            .getOrFail("Task")
+            .map(task => Results.Ok(task.toJson))
       }
 
   def list: Action[AnyContent] =
@@ -88,6 +91,18 @@ class TaskCtrl @Inject() (
         val tasks = taskSrv
           .initSteps
           .visible
+          .richTask
+          .toList
+        Success(Results.Ok(tasks.toJson))
+      }
+
+  def list(caseId: String): Action[AnyContent] =
+    entrypoint("list task for specific case")
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        val tasks = caseSrv
+          .get(caseId)
+          .visible
+          .tasks
           .richTask
           .toList
         Success(Results.Ok(tasks.toJson))

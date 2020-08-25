@@ -131,4 +131,15 @@ class CaseCtrl @Inject() (
             Results.Ok(mergedCase.toJson)
           }
       }
+
+  def list: Action[AnyContent] =
+    entrypoint("list cases")
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        val cases = caseSrv
+          .initSteps
+          .visible
+          .richCase
+          .toList
+        Success(Results.Ok(cases.toJson))
+      }
 }
